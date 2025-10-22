@@ -1,0 +1,22 @@
+name: Run from ServiceNow
+
+on:
+  repository_dispatch:
+    types: [servicenow-approved]
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Print payload details
+        run: |
+          echo "ServiceNow Ticket ID: ${{ github.event.client_payload.ticket_id }}"
+          echo "Requested by: ${{ github.event.client_payload.requester }}"
+          echo "Short Description: ${{ github.event.client_payload.short_description }}"
+
+      - name: Example Script
+        run: |
+          echo "Running your custom automation script here..."
