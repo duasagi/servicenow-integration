@@ -25,20 +25,31 @@ jobs:
         run: echo "ServiceNow Ticket Number: ${{ github.event.inputs.ticket_number }}"
 
       - name: Fetch ticket sys_id
+        env:
+          SN_USERNAME: ${{ github.event.inputs.sn_username }}
+          SN_PASSWORD: ${{ github.event.inputs.sn_password }}
+          INSTANCE_URL: ${{ github.event.inputs.instance_url }}
+          TICKET_NUMBER: ${{ github.event.inputs.ticket_number }}
         run: |
-          echo "Fetching sys_id for ticket ${{ github.event.inputs.ticket_number }}"
-          curl -s -u "${{ github.event.inputs.sn_username }}:${{ github.event.inputs.sn_password }}" \
+          echo "Fetching sys_id for ticket $TICKET_NUMBER"
+          curl -s -u "$SN_USERNAME:$SN_PASSWORD" \
           -H "Accept: application/json" \
-          "${{ github.event.inputs.instance_url }}/api/now/table/incident?sysparm_query=number=${{ github.event.inputs.ticket_number }}" \
+          "$INSTANCE_URL/api/now/table/incident?sysparm_query=number=$TICKET_NUMBER" \
           | jq -r '.result[0].sys_id' > sysid.txt
           echo "sys_id found:"
           cat sysid.txt
 
       - name: Update worknote in ServiceNow
+        env:
+          SN_USERNAME: ${{ github.event.inputs.sn_username }}
+          SN_PASSWORD: ${{ github.event.inputs.sn_password }}
+          INSTANCE_URL: ${{ github.event.inputs.instance_url }}
+          TICKET_NUMBER: ${{ github.event.inputs.ticket_number }}
         run: |
           sysid=$(cat sysid.txt)
-          curl -s -u "${{ github.event.inputs.sn_username }}:${{ github.event.inputs.sn_password }}" \
+          echo "Updating worknotes for ticket $TICKET_NUMBER"
+          curl -s -u "$SN_USERNAME:$SN_PASSWORD" \
           -X PATCH \
           -H "Content-Type: application/json" \
-          -d "{\"work_notes\":\"GitHub Action executed successfully for ticket ${{ github.event.inputs.ticket_number }}\"}" \
-          "${{ github.event.inputs.instance_url }}/api/now/table/incident/$sysid"
+          -d "{\"work_notes\":\"GitHub Action executed successfully for ticket $TICKET_NUMBER\"}" \
+          "$INSTANCE_URL/api/now/table/incident/$sysid"
