@@ -4,43 +4,20 @@ on:
   workflow_dispatch:
     inputs:
       ticket_number:
-        description: "ServiceNow ticket number"
         required: true
       instance_url:
-        description: "ServiceNow instance URL (e.g. https://dev12345.service-now.com)"
-        required: true
-      sn_username:
-        description: "ServiceNow username"
-        required: true
-      sn_password:
-        description: "ServiceNow password"
         required: true
 
 jobs:
   run-ticket-job:
     runs-on: ubuntu-latest
     env:
-      SN_USERNAME: ${{ github.event.inputs.sn_username }}
-      SN_PASSWORD: ${{ github.event.inputs.sn_password }}
       INSTANCE_URL: ${{ github.event.inputs.instance_url }}
       TICKET_NUMBER: ${{ github.event.inputs.ticket_number }}
-
     steps:
       - name: Display ticket number
-        run: echo "ServiceNow Ticket Number: $TICKET_NUMBER"
+        run: echo "Ticket: $TICKET_NUMBER"
 
-      - name: Fetch sys_id and update worknote
+      - name: Call script or API
         run: |
-          echo "Fetching sys_id for ticket $TICKET_NUMBER"
-          sysid=$(curl -s -u "$SN_USERNAME:$SN_PASSWORD" \
-            -H "Accept: application/json" \
-            "$INSTANCE_URL/api/now/table/incident?sysparm_query=number=$TICKET_NUMBER" \
-            | jq -r '.result[0].sys_id')
-          echo "sys_id found: $sysid"
-
-          echo "Updating worknotes for ticket $TICKET_NUMBER"
-          curl -s -u "$SN_USERNAME:$SN_PASSWORD" \
-            -X PATCH \
-            -H "Content-Type: application/json" \
-            -d "{\"work_notes\":\"GitHub Action executed successfully for ticket $TICKET_NUMBER\"}" \
-            "$INSTANCE_URL/api/now/table/incident/$sysid"
+          echo "Here you can execute your GitHub script or call APIs"
