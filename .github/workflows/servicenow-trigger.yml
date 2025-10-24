@@ -1,22 +1,44 @@
-name: Run from ServiceNow
+name: ServiceNow Ticket Workflow
 
 on:
-  repository_dispatch:
-    types: [servicenow-approved]
+  workflow_dispatch:
+    inputs:
+      ticket_number:
+        description: "ServiceNow ticket number"
+        required: true
+      instance_url:
+        description: "ServiceNow instance URL (e.g. https://dev12345.service-now.com)"
+        required: true
+      sn_username:
+        description: "ServiceNow username"
+        required: true
+      sn_password:
+        description: "ServiceNow password"
+        required: true
 
 jobs:
-  run-script:
+  run-ticket-job:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Display ticket number
+        run: echo "ServiceNow Ticket Number: ${{ github.event.inputs.ticket_number }}"
 
-      - name: Print payload details
+      - name: Fetch ticket sys_id
         run: |
-          echo "ServiceNow Ticket ID: ${{ github.event.client_payload.ticket_id }}"
-          echo "Requested by: ${{ github.event.client_payload.requester }}"
-          echo "Short Description: ${{ github.event.client_payload.short_description }}"
+          echo "Fetching sys_id for ticket ${{ github.event.inputs.ticket_number }}"
+          curl -s -u "${{ github.event.inputs.sn_username }}:${{ github.event.inputs.sn_password }}" \
+          -H "Accept: application/json" \
+          "${{ github.event.inputs.instance_url }}/api/now/table/incident?sysparm_query=number=${{ github.event.inputs.ticket_number }}" \
+          | jq -r '.result[0].sys_id' > sysid.txt
+          echo "sys_id found:"
+          cat sysid.txt
 
-      - name: Example Script
+      - name: Update worknote in ServiceNow
         run: |
-          echo "Running your custom automation script here..."
+          sysid=$(cat sysid.txt)
+          curl -s -u "${{ github.event.inputs.sn_username }}:${{ github.event.inputs.sn_password }}" \
+          -X PATCH \
+          -H "Content-Type: application/json" \
+          -d "{\"work_notes\":\"GitHub Action executed successfully for ticket ${{ github.event.inputs.ticket_number }}\"}" \
+          "${{ github.event.inputs.instance_url }}/api/now/table/incident/$sysid"
